@@ -1,0 +1,3 @@
+Data/glove.840B.300d.txt
+text/classification/embedding_binary.pickle
+text/classification/embedding_multi.pickle
