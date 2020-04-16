@@ -56,7 +56,7 @@
 <br>
 
 
-# binary_contextualized.py
+# binary_elmo.py
 - binary classification
 - contextualized embedding 사용
 
@@ -128,7 +128,7 @@
 <br>
 
 
-# multi_contextualized.py
+# multi_elmo.py
 - multi classification
 - contextualized embedding 사용
 
