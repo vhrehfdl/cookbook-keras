@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import keras
 import numpy as np
@@ -6,7 +7,7 @@ import pandas as pd
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Bidirectional, GlobalMaxPooling1D, GlobalAveragePooling1D, LSTM
-from keras.layers import Input, Dense, Embedding, add, concatenate, Flatten
+from keras.layers import Input, Dense, Embedding, SpatialDropout1D, add, concatenate, Flatten
 from keras.layers.convolutional import Conv1D
 from keras.layers.pooling import MaxPool1D
 from keras.models import Model
@@ -48,7 +49,7 @@ def load_data(train_dir, test_dir, category_size):
     return train_x, train_y, test_x, test_y, val_x, val_y
 
 
-# convert text data to vector.
+# convert Text data to vector.
 def data_preprocissing(train_x, test_x, val_x):
     CHARS_TO_REMOVE = r'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n“”’\'∞θ÷α•à−β∅³π‘₹´°£€\×™√²—'
 
@@ -74,15 +75,45 @@ def data_preprocissing(train_x, test_x, val_x):
     return train_x, test_x, val_x, tokenizer
 
 
-def build_model_basic(size, vocab_size, category_size):
+def get_coefs(word, *arr):
+    return word, np.asarray(arr, dtype='float32')
+
+
+def load_embeddings(path):
+    with open(path, encoding="utf-8") as f:
+        return dict(get_coefs(*line.strip().split(' ')) for line in f)
+
+
+# Pre-trained embedding match to my dataset.
+def text_to_vector(word_index, path, word_dimension):
+    # If you change your embedding.pickle file, you must make new embedding.pickle file.
+    if os.path.isfile("embedding_multi.pickle"):
+        with open("embedding_multi.pickle", 'rb') as rotten_file:
+            embedding_matrix = pickle.load(rotten_file)
+
+    else:
+        embedding_index = load_embeddings(path)
+        embedding_matrix = np.zeros((len(word_index) + 1, 300))
+        for word, i in word_index.items():
+            try:
+                embedding_matrix[i] = embedding_index[word]
+            except KeyError:
+                pass
+
+        with open("embedding_multi.pickle", 'wb') as handle:
+            pickle.dump(embedding_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return embedding_matrix
+
+
+def build_model_basic(size, embedding_matrix, category_size):
     ### Hyper Parameter
-    embedding_dim = 300
     hidden_units = 64
 
     ### Model Architecture
     input_layer = Input(shape=(size,))
 
-    embedding_layer = Embedding(vocab_size, embedding_dim)(input_layer)
+    embedding_layer = Embedding(*embedding_matrix.shape, weights=[embedding_matrix], trainable=False)(input_layer)
 
     dense_layer = Flatten()(embedding_layer)
     hidden_layer = Dense(hidden_units, activation='relu')(dense_layer)
@@ -96,16 +127,15 @@ def build_model_basic(size, vocab_size, category_size):
 
 
 # BI_LSTM
-def build_model_lstm(size, vocab_size, category_size):
+def build_model_lstm(size, embedding_matrix, category_size):
     ### Hyper Parameter
-    embedding_dim = 300
     lstm_units = 128
     hidden_units = 512
 
     ### Model Architecture
     input_layer = Input(shape=(size,))
 
-    embedding_layer = Embedding(vocab_size, embedding_dim)(input_layer)
+    embedding_layer = Embedding(*embedding_matrix.shape, weights=[embedding_matrix], trainable=False)(input_layer)
 
     lstm_layer = Bidirectional(LSTM(lstm_units, return_sequences=True))(embedding_layer)
     lstm_layer = Bidirectional(LSTM(lstm_units, return_sequences=True))(lstm_layer)
@@ -124,16 +154,15 @@ def build_model_lstm(size, vocab_size, category_size):
 
 
 # TextCNN
-def build_model_cnn(size, vocab_size, category_size):
+def build_model_cnn(size, embedding_matrix, category_size):
     ### Hyper Parameter
-    embedding_dim = 300
     num_filters = 128
     filter_sizes = [3, 4, 5]
 
     ### Model Architecture
     input_layer = Input(shape=(size,))
 
-    embedding_layer = Embedding(vocab_size, embedding_dim)(input_layer)
+    embedding_layer = Embedding(*embedding_matrix.shape, weights=[embedding_matrix], trainable=False)(input_layer)
 
     pooled_outputs = []
     for filter_size in filter_sizes:
@@ -173,28 +202,27 @@ def create_callbacks(model_dir):
 def main():
     ### Directory Setting.
     base_dir = "../.."
+    category_num = 4
+    target_names = ['0', '1', '2', '3']
 
     train_dir = base_dir + "/Data/multi_train_data.csv"
     test_dir = base_dir + "/Data/multi_test_data.csv"
 
     model_dir = base_dir + "/Model"
+    embedding_dir = base_dir + "/Data/glove.840B.300d.txt"
 
 
     ### Flow
-    category_num = 4
-    target_names = ['0', '1', '2', '3']
-
     set_env()
 
     train_x, train_y, test_x, test_y, val_x, val_y = load_data(train_dir, test_dir, category_num)
     train_x, test_x, val_x, tokenizer = data_preprocissing(train_x, test_x, val_x)
 
-    word_index = tokenizer.word_index
-    vocab_size = len(word_index)
+    embedding_matrix = text_to_vector(tokenizer.word_index, embedding_dir, word_dimension=300)
 
-    model = build_model_basic(train_x.shape[1], vocab_size, category_num)
-    # model = build_model_lstm(train_x.shape[1], vocab_size, category_num)
-    # model = build_model_cnn(train_x.shape[1], vocab_size, category_num)
+    # model = build_model_basic(train_x.shape[1], embedding_matrix, category_num)
+    model = build_model_lstm(train_x.shape[1], embedding_matrix, category_num)
+    # model = build_model_cnn(train_x.shape[1], embedding_matrix, category_num)
 
     callbacks = create_callbacks(model_dir)
     model.fit(x=train_x, y=train_y, epochs=2, batch_size=32, validation_data=(val_x, val_y), callbacks=callbacks)

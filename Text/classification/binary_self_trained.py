@@ -38,7 +38,7 @@ def load_data(train_dir, test_dir):
     return train_x, train_y, test_x, test_y, val_x, val_y
 
 
-# convert text data to vector.
+# convert Text data to vector.
 def data_preprocissing(train_x, test_x, val_x):
     CHARS_TO_REMOVE = r'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n“”’\'∞θ÷α•à−β∅³π‘₹´°£€\×™√²—'
 
