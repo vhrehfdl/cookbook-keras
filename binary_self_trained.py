@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 # import models.TextCNN.text_cnn as md
 from models.TextCNN import text_cnn
 
-
+#test
 # gpu setting.
 def set_env():
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
