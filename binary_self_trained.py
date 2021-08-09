@@ -1,30 +1,15 @@
-import os
-
 import pandas as pd
-import tensorflow as tf
+
+import keras
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Embedding, Dense, Flatten, Input
-from keras.layers import LSTM, Bidirectional, GlobalMaxPooling1D, GlobalAveragePooling1D
-from keras.layers import SpatialDropout1D, add, concatenate
-from keras.layers.convolutional import Conv1D
-from keras.layers.pooling import MaxPool1D
-from keras.models import Model
 from keras.preprocessing import text, sequence
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 
-# import models.TextCNN.text_cnn as md
-from models.TextCNN import text_cnn
-
-#test
-# gpu setting.
-def set_env():
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
-    session = tf.Session(config=config)
-    session
+from utils import set_env
+from utils.evaluation import Evaluation
+from models.text_cnn import TextCNN
 
 
 # load data from csv file.
@@ -38,17 +23,24 @@ def load_data(train_dir, test_dir):
     test_x, test_y = test["text"], test["label"]
     val_x, val_y = val["text"], val["label"]
 
-    return train_x, train_y, test_x, test_y, val_x, val_y
+    encoder = preprocessing.LabelEncoder()
+    train_y = encoder.fit_transform(train_y)
+    test_y = encoder.fit_transform(test_y)
+    val_y = encoder.fit_transform(val_y)
+
+    target_names = encoder.classes_
+
+    return train_x, train_y, test_x, test_y, val_x, val_y, target_names
 
 
 # convert Text data to vector.
-def data_preprocissing(train_x, test_x, val_x):
+def pre_processing(train_x, test_x, val_x):
     CHARS_TO_REMOVE = r'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n“”’\'∞θ÷α•à−β∅³π‘₹´°£€\×™√²—'
 
     train_x = train_x.tolist()
     test_x = test_x.tolist()
     val_x = val_x.tolist()
-
+    
     tokenizer = text.Tokenizer(filters=CHARS_TO_REMOVE)
     tokenizer.fit_on_texts(train_x + test_x + val_x)  # Make dictionary
 
@@ -72,13 +64,15 @@ def data_preprocissing(train_x, test_x, val_x):
     return train_x, test_x, val_x, tokenizer
 
 
-def evaluate(model, test_x, test_y):
+def binary_evaluate(model, test_x, test_y):
     prediction = model.predict(test_x)
     y_pred = (prediction > 0.5)
 
     accuracy = accuracy_score(test_y, y_pred)
-    print("Accuracy: %.2f%%" % (accuracy * 100.0))
-    print(classification_report(test_y, y_pred, target_names=["0", "1"]))
+    cf_matrix = confusion_matrix(test_y, y_pred)
+    report = classification_report(test_y, y_pred)
+
+    return accuracy, cf_matrix, report
 
 
 def create_callbacks(model_dir):
@@ -87,30 +81,43 @@ def create_callbacks(model_dir):
 
 
 def main():
-    ### Directory Setting.
-    base_dir = "."
+    # Directory Setting
+    train_dir = "./data/binary_train.csv"
+    test_dir = "./data/binary_test.csv"
+    model_dir = "./model_save"
 
-    train_dir = base_dir + "/data/binary_train.csv"
-    test_dir = base_dir + "/data/binary_test.csv"
+    # HyperParameter
+    embedding_dim = 300
+    filter_sizes = [3, 4, 5]
+    epoch = 1
+    batch = 256
 
-    model_dir = base_dir + "/Model"
 
-
-    ### Flow
+    # Flow
     set_env()
 
-    train_x, train_y, test_x, test_y, val_x, val_y = load_data(train_dir, test_dir)
-    train_x, test_x, val_x, tokenizer = data_preprocissing(train_x, test_x, val_x)
-    vocab_size = len(tokenizer.word_index)
+    print("1. load data")
+    train_x, train_y, test_x, test_y, val_x, val_y, target_names = load_data(train_dir, test_dir)
+    
+    print("2. pre processing & text to vector")
+    train_x, test_x, val_x, tokenizer = pre_processing(train_x, test_x, val_x)
+    sequence_len = train_x.shape[1]
+    vocab_size = len(tokenizer.word_index) + 1
 
-    model = text_cnn.TextCNN(train_x.shape[1], vocab_size)
-    model = model.build_model()
+    print("3. build model")
+    model = TextCNN(sequence_len, vocab_size, embedding_dim, filter_sizes)
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     callbacks = create_callbacks(model_dir)
-    model.fit(x=train_x, y=train_y, epochs=3, batch_size=64, validation_data=(val_x, val_y), callbacks=callbacks)
+    model.fit(x=train_x, y=train_y, epochs=epoch, batch_size=batch, validation_data=(val_x, val_y), callbacks=callbacks)
 
-    evaluate(model, test_x, test_y)
+    print("4. evaluation")
+    evaluation = Evaluation(model, test_x, test_y)
+    accuracy, cf_matrix, report = evaluation.eval_classification(data_type="binary")
+    print("## Target Names : ", target_names)
+    print("## Classification Report \n", report)
+    print("## Confusion Matrix \n", cf_matrix)
+    print("## Accuracy \n", accuracy)
 
 
 if __name__ == '__main__':

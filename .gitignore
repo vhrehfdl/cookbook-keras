@@ -1,3 +1,2 @@
-Data/glove.840B.300d.txt
-Text/classification/embedding_binary.pickle
-Text/classification/embedding_multi.pickle
+__pycache__
+model_save
