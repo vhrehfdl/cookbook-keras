@@ -4,13 +4,17 @@ from keras.layers.pooling import MaxPool1D
 from keras.models import Model
 
 
-def TextCNN(sequence_len, vocab_size, embedding_dim, filter_sizes):
+def TextCNN(sequence_len, embedding_matrix, embedding_dim, filter_sizes, flag="self"):
     # Input Layer
     input_layer = Input(shape=(sequence_len,))
 
-    # Hideen Layer
-    embedding_layer = Embedding(vocab_size, embedding_dim)(input_layer)
+    # Embedding Layer
+    if flag == "self":
+        embedding_layer = Embedding(embedding_matrix, embedding_dim)(input_layer)
+    elif flag == "pre_trained":
+        embedding_layer = Embedding(*embedding_matrix.shape, weights=[embedding_matrix], trainable=False)(input_layer)
 
+    # Hideen Layer
     pooled_outputs = []
     for filter_size in filter_sizes:
         x = Conv1D(embedding_dim, filter_size, activation='relu')(embedding_layer)
