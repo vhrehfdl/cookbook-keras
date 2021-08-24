@@ -12,6 +12,7 @@ from utils import set_env
 from utils.bert_helper import convert_examples_to_features, convert_text_to_examples
 from utils.evaluation import Evaluation
 
+
 sess = tf.Session()
 
 
