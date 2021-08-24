@@ -1,10 +1,6 @@
-# 공용
 tensorflow==1.15.0
 keras==2.1.0
 scikit-learn==0.24.2
 pandas==1.3.1
-
-
-# BERT
-# bert-tensorflow
-# tensorflow-hub
+tensorflow-hub==0.12.0
+bert-tensorflow==1.0.1

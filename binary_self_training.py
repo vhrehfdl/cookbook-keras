@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from utils import set_env, create_callbacks
-from utils.data import pre_processing
+from utils.data_helper import pre_processing
 from models.text_cnn import TextCNN
 from utils.evaluation import Evaluation
 
@@ -26,30 +26,28 @@ def main():
     test_dir = "./data/binary_test.csv"
     model_dir = "./model_save"
 
-
     # HyperParameter
     epoch = 2
     batch = 256
-
 
     # Flow
     print("0. Setting Environment")
     set_env()
 
     print("1. load data")
-    train_x, train_y, test_x, test_y, val_x, val_y, target_names = load_data(train_dir, test_dir)
+    train_x, train_y, test_x, test_y, val_x, val_y = load_data(train_dir, test_dir)
     
     print("2. pre processing")
     train_x, test_x, val_x, tokenizer = pre_processing(train_x, test_x, val_x)
 
     print("3. build model")
     model = TextCNN(
-        sequence_len = train_x.shape[1], 
-        embedding_matrix = len(tokenizer.word_index) + 1, 
-        embedding_dim = 300, 
-        filter_sizes = [3, 4, 5], 
-        flag = "self_training",
-        data_type = "binary"
+        sequence_len=train_x.shape[1],
+        embedding_matrix=len(tokenizer.word_index) + 1,
+        embedding_dim=300,
+        filter_sizes=[3, 4, 5],
+        flag="self_training",
+        data_type="binary"
     )
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     
@@ -59,7 +57,6 @@ def main():
     print("4. evaluation")
     evaluation = Evaluation(model, test_x, test_y)
     accuracy, cf_matrix, report = evaluation.eval_classification(data_type="binary")
-    print("## Target Names : ", target_names)
     print("## Classification Report \n", report)
     print("## Confusion Matrix \n", cf_matrix)
     print("## Accuracy \n", accuracy)

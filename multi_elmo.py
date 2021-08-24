@@ -1,11 +1,11 @@
 import keras
+import numpy as np
 import pandas as pd
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
-from models.text_cnn import TextCNN
+from models.elmo import BasicElmo
 from utils import set_env, create_callbacks
-from utils.data_helper import pre_processing
 from utils.evaluation import Evaluation
 
 
@@ -37,8 +37,10 @@ def main():
     model_dir = "./model_save"
 
     # HyperParameter
-    epoch = 2
-    batch = 256
+    epoch = 1
+    batch = 128
+    max_len = 50
+    hidden_units = 64
     target_names = ['0', '1', '2', '3']
 
     # Flow
@@ -49,19 +51,24 @@ def main():
     train_x, train_y, test_x, test_y, val_x, val_y = load_data(train_dir, test_dir, len(target_names))
 
     print("2. pre processing")
-    train_x, test_x, val_x, tokenizer = pre_processing(train_x, test_x, val_x)
+    train_x, val_x, test_x = train_x.tolist(), val_x.tolist(), test_x.tolist()
+
+    train_x = [' '.join(t.split()[0:max_len]) for t in train_x]
+    train_x = np.array(train_x, dtype=object)[:, np.newaxis]
+
+    val_x = [' '.join(t.split()[0:max_len]) for t in val_x]
+    val_x = np.array(val_x, dtype=object)[:, np.newaxis]
+
+    test_x = [' '.join(t.split()[0:max_len]) for t in test_x]
+    test_x = np.array(test_x, dtype=object)[:, np.newaxis]
 
     print("3. build model")
-    model = TextCNN(
-        sequence_len=train_x.shape[1],
-        embedding_matrix=len(tokenizer.word_index) + 1,
-        embedding_dim=300,
-        filter_sizes=[3, 4, 5],
-        flag="self_training",
+    model = BasicElmo(
+        hidden_units=hidden_units,
         data_type="multi",
-        category_num=len(target_names)
+        category_size=len(target_names)
     )
-    model.compile(optimizer="adam", loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     callbacks = create_callbacks(model_dir)
     model.fit(x=train_x, y=train_y, epochs=epoch, batch_size=batch, validation_data=(val_x, val_y), callbacks=callbacks)
@@ -75,8 +82,5 @@ def main():
     print("## Accuracy \n", accuracy)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
-
-
-

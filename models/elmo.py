@@ -2,7 +2,6 @@ import keras.backend as K
 import keras.layers as layers
 import tensorflow as tf
 import tensorflow_hub as hub
-from keras.callbacks import ModelCheckpoint
 from keras.engine import Layer
 from keras.models import Model
 
@@ -29,13 +28,19 @@ class ElmoEmbeddingLayer(Layer):
         return (input_shape[0], self.dimensions)
 
 
-def BasicElmo(hidden_units):
+def ELMo(hidden_units, data_type, category_size=None):
+    # Input Layer
     input_layer = layers.Input(shape=(1,), dtype="string")
 
+    # Embedding Layer
     embedding_layer = ElmoEmbeddingLayer()(input_layer)
     dense_elmo = layers.Dense(hidden_units, activation='relu')(embedding_layer)
 
-    output_layer = layers.Dense(1, activation='sigmoid')(dense_elmo)
+    # Output Layer
+    if data_type == "binary":
+        output_layer = layers.Dense(1, activation='sigmoid')(dense_elmo)
+    elif data_type == "multi":
+        output_layer = layers.Dense(category_size, activation='softmax')(dense_elmo)
 
     model = Model(inputs=[input_layer], outputs=output_layer)
 

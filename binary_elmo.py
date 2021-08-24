@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
+from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
+from models.elmo import ELMo
 from utils import set_env, create_callbacks
-from utils.data import pre_processing
-from models.basic_elmo import BasicElmo
 from utils.evaluation import Evaluation
 
 
@@ -18,6 +18,11 @@ def load_data(train_dir, test_dir):
     test_x, test_y = test["text"], test["label"]
     val_x, val_y = val["text"], val["label"]
 
+    encoder = preprocessing.LabelEncoder()
+    train_y = encoder.fit_transform(train_y)
+    test_y = encoder.fit_transform(test_y)
+    val_y = encoder.fit_transform(val_y)
+
     return train_x, train_y, test_x, test_y, val_x, val_y
 
 
@@ -27,23 +32,18 @@ def main():
     test_dir = "./data/binary_test.csv"
     model_dir = "./model_save"
 
-
     # HyperParameter
     max_len = 50
     epoch = 2
     batch = 256
     hidden_units = 256
 
-
-
     # Flow
     print("0. Setting Environment")
     set_env()
 
-
     print("1. load data")
     train_x, train_y, test_x, test_y, val_x, val_y = load_data(train_dir, test_dir)
-
 
     print("2. pre processing")
     train_x, val_x, test_x = train_x.tolist(), val_x.tolist(), test_x.tolist()
@@ -57,15 +57,15 @@ def main():
     test_x = [' '.join(t.split()[0:max_len]) for t in test_x]
     test_x = np.array(test_x, dtype=object)[:, np.newaxis]
 
-
     print("3. build model")
-    model = BasicElmo(
-        hidden_units = hidden_units
+    model = ELMo(
+        hidden_units=hidden_units,
+        data_type="binary"
     )
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     callbacks = create_callbacks(model_dir)
-    model.fit(x=train_x, y=train_y, epochs=3, batch_size=128, validation_data=(val_x, val_y), callbacks=callbacks)
-
+    model.fit(x=train_x, y=train_y, epochs=epoch, batch_size=batch, validation_data=(val_x, val_y), callbacks=callbacks)
 
     print("4. evaluation")
     evaluation = Evaluation(model, test_x, test_y)
@@ -73,7 +73,6 @@ def main():
     print("## Classification Report \n", report)
     print("## Confusion Matrix \n", cf_matrix)
     print("## Accuracy \n", accuracy)
-
 
 
 if __name__ == '__main__':

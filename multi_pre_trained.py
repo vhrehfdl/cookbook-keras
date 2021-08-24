@@ -4,7 +4,7 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
 from utils import set_env, create_callbacks
-from utils.data import pre_processing, text_to_vector
+from utils.data_helper import pre_processing, text_to_vector
 from models.text_cnn import TextCNN
 from utils.evaluation import Evaluation
 
@@ -37,13 +37,11 @@ def main():
     model_dir = "./model_save"
     embedding_dir = "./glove.6B.50d.txt"
 
-
     # HyperParameter
     epoch = 1
     batch = 256
     embedding_dim = 50
     target_names = ['0', '1', '2', '3']
-
 
     # Flow
     print("0. Setting Environment")
@@ -60,13 +58,13 @@ def main():
 
     print("4. build model")
     model = TextCNN(
-        sequence_len = train_x.shape[1], 
-        embedding_matrix = embedding_matrix, 
-        embedding_dim = embedding_dim, 
-        filter_sizes = [3, 4, 5], 
-        flag = "pre_training",
-        data_type = "multi",
-        category_num = len(target_names)
+        sequence_len=train_x.shape[1],
+        embedding_matrix=embedding_matrix,
+        embedding_dim=embedding_dim,
+        filter_sizes=[3, 4, 5],
+        flag="pre_training",
+        data_type="multi",
+        category_num=len(target_names)
     )
     model.compile(optimizer="adam", loss='categorical_crossentropy', metrics=['accuracy'])
     callbacks = create_callbacks(model_dir)

@@ -2,6 +2,7 @@ import os
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 
+
 # gpu setting.
 def set_env():
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
