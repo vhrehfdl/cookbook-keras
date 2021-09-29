@@ -1,10 +1,12 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 
 from utils import set_env, create_callbacks
 from utils.data_helper import pre_processing
 from models.text_cnn import TextCNN
 from utils.evaluation import Evaluation
+
 
 
 def load_data(train_dir, test_dir):
@@ -16,6 +18,12 @@ def load_data(train_dir, test_dir):
     train_x, train_y = train["text"], train["label"]
     test_x, test_y = test["text"], test["label"]
     val_x, val_y = val["text"], val["label"]
+
+    # string to float
+    encoder = preprocessing.LabelEncoder()
+    train_y = encoder.fit_transform(train_y)
+    test_y = encoder.fit_transform(test_y)
+    val_y = encoder.fit_transform(val_y)
 
     return train_x, train_y, test_x, test_y, val_x, val_y
 

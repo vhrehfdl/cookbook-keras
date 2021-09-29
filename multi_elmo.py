@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
-from models.elmo import BasicElmo
+from models.elmo import ELMo
 from utils import set_env, create_callbacks
 from utils.evaluation import Evaluation
 
@@ -63,7 +63,7 @@ def main():
     test_x = np.array(test_x, dtype=object)[:, np.newaxis]
 
     print("3. build model")
-    model = BasicElmo(
+    model = ELMo(
         hidden_units=hidden_units,
         data_type="multi",
         category_size=len(target_names)
