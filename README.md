@@ -9,9 +9,7 @@ python binary_self_training.py
 ```
 
 ## Flow
-- load_data
-  - 데이터를 불러오는 함수.
-  - CSV 파일을 기준으로 코드 작성.
+- load_data : 학습 및 테스트 데이터 불러오기 (CSV 파일을 기준으로 코드 작성).
 
 - pre_processing
   - 문장 전처리하는 함수.  
@@ -32,39 +30,24 @@ python binary_self_training.py
 
 - build_model
   - 학습 모델 생성
-  - binary classification이기 때문에 loss는 binary_crossentropy를 사용했다.
-  - 그리고 output layer에 node를 1로 설정하고 activation은 sigmoid로 설정해 0.5보다 크면 1로 분류했고 0.5이하이면 0으로 분류하였다.
+  - binary classification이기 때문에 loss는 binary_crossentropy를 사용했다. output layer에 node를 1로 설정하고 activation은 sigmoid로 설정해 0.5보다 크면 1로 분류했고 0.5이하이면 0으로 분류하였다.
 
 - evaluate : 테스트 데이터를 이용해 모델 성능 평가
-
-<br>
 
 ## Description
 ### binary_self_trained.py
 - keras embedding layer 사용
 - word2vec, fasttext, glove 등의 외부 embedding matrix 값을 사용하지 않고 keras embedding layer를 사용한다.
-- binary_pre_trained.py와 다르게 keras embedding layer를 사용하기 때문에 따로 외부에서 embedding matrix 값을 받아오지 않는다. 그렇기 때문에 text_to_vector 함수 제외.
-
-<br>
+- binary_pre_trained.py와 다르게 keras embedding layer를 사용하기 때문에 따로 외부에서 embedding matrix 값을 받아오지 않는다.
 
 ### binary_elmo.py
 - contextualized embedding 사용.
-- ELMo는 전체 문장을 넣기 때문에 따로 vector화 시키지 않고 그대로 ELMo에 embedding에 집어 넣는다.
-- ELMo에 문장을 입력하면 1024차원으로 압축된 후 dense layer를 거치면 256차원으로 압축된다.
-
-<br>
+- ELMo는 전체 문장을 넣기 때문에 따로 vector화 시키지 않고 그대로 ELMo에 embedding 입력.
+- ELMo에 문장을 입력하면 1024차원으로 압축된 후 dense layer를 거치면 256차원으로 압축.
 
 ### multi_pre_trained.py
 - pre-trained embedding vector 사용
-- multi_train_data의 label은 happy, angry, others, sad로 구성되어 있기 때문에 0, 1, 2, 3으로 바꿔주고 거기서 또 one-hot encoeding으로 변환시켜준다.
-- [0 ,0, 0, 1], [0 ,0, 1, 0], [0 ,1, 0, 0], [1 ,0, 0, 0]로 변경된다.
-- output_layer의 node 개수를 category 개수와 동일하게 설정. ( 여기서는 4개 )
+- multi_train_data의 label은 happy, angry, others, sad로 구성되어 있기 때문에 0, 1, 2, 3으로 바꿔주고 거기서 또 one-hot encoeding으로 변환.
+- [0 ,0, 0, 1], [0 ,0, 1, 0], [0 ,1, 0, 0], [1 ,0, 0, 0]로 변경.
+- output_layer의 node 개수를 category 개수와 동일하게 설정. (여기서는 4개)
 - output_layer의 activate function은 softmax로 설정.
-
-<br>
-
-### multi_elmo.py
-- binary_contextualized.py와 동일.
-- output_layer의 node 개수만 category 개수와 동일하게 해준다.
-
-<br>
