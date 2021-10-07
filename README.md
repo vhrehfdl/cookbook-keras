@@ -5,7 +5,9 @@ pip install -r requirements.txt
 
 ## Train
 ```bash
-python binary_self_training.py
+wget http://nlp.stanford.edu/data/glove.6B.zip
+unzip glove*.zip
+python binary_pre_training.py
 ```
 
 ## Flow
